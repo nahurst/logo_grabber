@@ -1,18 +1,33 @@
 require 'open-uri'
 require 'nokogiri'
+require 'css_parser'
 
 class LogoGrabber
   def self.grab(url, options={}, callback=nil)
-    @url = url.gsub('\/$', '')
+    @url = url
     doc = Nokogiri::HTML(open(@url))
-    parse(doc, options, callback)
+    grab_from_doc(doc, options, callback)
   end
 
-
   def self.grab_from_doc(doc, options={}, callback=nil)
-    @url ||= "" # for testing purposes and in case you're reading the doc from the file system (keeps things relative)
+    @url ||= "http://example.com"
     images = doc.css('img').select { |img| contains_logo?(img) }
-    images.map! { |img| make_absolute(img[:src]) }
+    images.map! { |img| make_absolute(@url, img[:src]) }
+
+    sheets = doc.css('link[type="text/css"]').map {|sheet| sheet[:href]}
+    parser = CssParser::Parser.new
+    background_urls = Array.new
+    sheets.each do |sheet|
+      parser.load_uri!(sheet)
+      parser.each_selector do |selector, declarations, specificity|
+        if declarations.include?("background-image: url") || declarations.include?("background: url")
+          background_urls << declarations.scan(/url\(['"]?([^\)'"]*)[\)'"]/)
+        end
+      end
+      background_urls = background_urls.select {|url| contains_logo?(url) }
+      background_urls.map! {|url| make_absolute(sheet, url) }
+      images.concat(background_urls)
+    end
 
     if options[:single]
       [images.first]
@@ -23,18 +38,18 @@ class LogoGrabber
 
   private
 
-  def self.contains_logo?(img)
+  def self.tag_contains_logo?(img)
     [img[:src], img[:alt], img[:title]].select do |attr|
-      attr && attr.include?('logo')
+      contains_logo?(attr)
     end.count > 0
   end
 
-  def self.make_absolute(src)
-    unless src.include?('//')
-      # possibly add check for leading '/' on src if it causes problems'
-      return @url + src
-    end
-    src
+  def self.contains_logo?(str)
+    str && str.to_s.downcase.include?('logo')
+  end
+
+  def self.make_absolute(base, path)
+    path.include?('//') ? path : URI.join(base.to_s, path.to_s).to_s
   end
 
 end

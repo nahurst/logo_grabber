@@ -1,6 +1,10 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    addressable (2.2.8)
+    css_parser (1.2.6)
+      addressable
+      rdoc
     diff-lcs (1.1.3)
     git (1.2.5)
     jeweler (1.8.3)
@@ -28,6 +32,7 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.0.0)
+  css_parser
   jeweler (~> 1.8.3)
   nokogiri
   rcov
