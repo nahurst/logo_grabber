@@ -23,9 +23,9 @@ describe "LogoGrabber" do
   end
 
   it "should find image from stylesheet" do
-      VCR.use_cassette("twitter_home_stylesheet_logos") do
-        LogoGrabber.grab("http://twitter.com").count.should == 3
-      end
-    end 
+    VCR.use_cassette("twitter_home_stylesheet_logos") do
+      LogoGrabber.grab("http://twitter.com").count.should == 3
+    end
+  end 
 
 end
