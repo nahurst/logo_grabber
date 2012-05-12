@@ -10,11 +10,26 @@ class LogoGrabber
   end
 
   def self.grab_from_doc(doc, options={}, callback=nil)
-    @url ||= "http://example.com"
-    images = doc.css('img').select { |img| contains_logo?(img) }
-    images.map! { |img| make_absolute(@url, img[:src]) } 
-     
+    grab_images_first(doc)
+    grab_stylesheet_images(doc) 
+    grab_favicon(doc) 
+    
+    if options[:single]
+      [@images.first]
+    else
+      @images
+    end
+  end
 
+  private  
+  
+  def self.grab_images_first(doc)
+    @url ||= "http://example.com"
+    @images = doc.css('img').select { |img| contains_logo?(img) }
+    @images.map! { |img| make_absolute(@url, img[:src]) } 
+  end  
+  
+  def self.grab_stylesheet_images(doc)
     sheets = doc.css('link[type="text/css"]').map {|sheet| sheet[:href]} 
     parser = CssParser::Parser.new
     background_urls = Array.new
@@ -28,26 +43,24 @@ class LogoGrabber
       
       background_urls = background_urls.flatten.select! {|url| contains_logo?(url) }   
       background_urls.map! {|url| make_absolute(sheet, url) } 
-      images.concat(background_urls) 
-    end 
-    
-    unless logo?(images) 
-      images = doc.css('link').select { |link| favicon?(link) }
-      images.map! { |link| make_absolute(@url, link[:href]) }        
-      if images.count == 0 
-        images = doc.css('img').select { |img| any_image(img) }
-        images.map! { |img| make_absolute(@url, img[:src]) }
-      end
+      @images.concat(background_urls) 
     end
-
-    if options[:single]
-      [images.first]
-    else
-      images
+  end 
+  
+  def self.grab_favicon(doc) 
+    unless logo?(@images) 
+      @images = doc.css('link').select { |link| favicon?(link) }
+      @images.map! { |link| make_absolute(@url, link[:href]) }        
+      grab_first_image(doc)
+    end
+  end  
+  
+  def self.grab_first_image(doc)
+    if @images.count == 0 
+      @images = doc.css('img').select { |img| any_image(img) }
+      @images.map! { |img| make_absolute(@url, img[:src]) }
     end
   end
-
-  private 
   
   def self.logo?(img)
     img.count > 0
