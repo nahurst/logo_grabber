@@ -20,6 +20,11 @@ describe "LogoGrabber" do
   it "should find the first image if a logo isn't found" do
     doc = Nokogiri::HTML("<html><body><img src='something.png' alt='not our l1go'/><img src='anything.jpg' alt='not the right l1go'/></body>")
     LogoGrabber.grab_from_doc(doc, :single => true).count.should == 1
+  end 
+  
+  it "should find the favicon if a logo isn't found " do
+    doc = Nokogiri::HTML("<html><body><link href='favicon.png'></body>")  
+    LogoGrabber.grab_from_doc(doc).count.should == 1
   end
 
   it "should find image from stylesheet" do

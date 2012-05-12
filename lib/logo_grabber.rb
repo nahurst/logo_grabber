@@ -15,7 +15,7 @@ class LogoGrabber
     images.map! { |img| make_absolute(@url, img[:src]) } 
      
 
-    sheets = doc.css('link[type="text/css"]').map {|sheet| sheet[:href]}
+    sheets = doc.css('link[type="text/css"]').map {|sheet| sheet[:href]} 
     parser = CssParser::Parser.new
     background_urls = Array.new
     sheets.each do |sheet|
@@ -31,9 +31,13 @@ class LogoGrabber
       images.concat(background_urls) 
     end 
     
-    unless logo?(images)
-      images = doc.css('img').select { |img| any_image(img) }
-      images.map! { |img| make_absolute(@url, img[:src]) }
+    unless logo?(images) 
+      images = doc.css('link').select { |link| favicon?(link) }
+      images.map! { |link| make_absolute(@url, link[:href]) }        
+      if images.count == 0 
+        images = doc.css('img').select { |img| any_image(img) }
+        images.map! { |img| make_absolute(@url, img[:src]) }
+      end
     end
 
     if options[:single]
@@ -57,14 +61,18 @@ class LogoGrabber
 
   def self.contains_logo?(str)
     str && str.to_s.downcase.include?('logo')
+  end 
+  
+  def self.favicon?(str)
+    str && %w(.ico favicon).any? {|image_type| str.to_s.downcase.include? image_type}
   end
   
   def self.any_image(str)
     str && %w(.png .jpg .img).any? {|image_type| str.to_s.downcase.include? image_type }
   end  
 
-  def self.make_absolute(base, path) 
-    path.include?('//') ? path : URI.join(base.to_s, path.to_s).to_s
+  def self.make_absolute(base, path)  
+     path.include?('//') ? path : URI.join(base.to_s, path.to_s).to_s
   end
 
 end                                                                   
