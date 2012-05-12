@@ -12,7 +12,11 @@ class LogoGrabber
   def self.grab_from_doc(doc, options={}, callback=nil)
     @url ||= "http://example.com"
     images = doc.css('img').select { |img| contains_logo?(img) }
-    images.map! { |img| make_absolute(@url, img[:src]) }
+    images.map! { |img| make_absolute(@url, img[:src]) } 
+    unless logo?(images)
+      images = doc.css('img').select { |img| any_image(img) }
+      images.map! { |img| make_absolute(@url, img[:src]) }
+    end
 
     sheets = doc.css('link[type="text/css"]').map {|sheet| sheet[:href]}
     parser = CssParser::Parser.new
@@ -36,8 +40,12 @@ class LogoGrabber
     end
   end
 
-  private
-
+  private 
+  
+  def self.logo?(img)
+    img.count > 0
+  end              
+  
   def self.tag_contains_logo?(img)
     [img[:src], img[:alt], img[:title]].select do |attr|
       contains_logo?(attr)
@@ -46,6 +54,10 @@ class LogoGrabber
 
   def self.contains_logo?(str)
     str && str.to_s.downcase.include?('logo')
+  end
+  
+  def self.any_image(str)
+    str && %w(.png .jpg .img).any? {|image_type| str.to_s.downcase.include? image_type }
   end
 
   def self.make_absolute(base, path)
