@@ -41,7 +41,7 @@ class LogoGrabber
         end
       end  
       
-      background_urls = background_urls.flatten.select! {|url| contains_logo?(url) }   
+      background_urls = background_urls.flatten.select {|url| contains_logo?(url) }   
       background_urls.map! {|url| make_absolute(sheet, url) } 
       @images.concat(background_urls) 
     end
